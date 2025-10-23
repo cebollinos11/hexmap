@@ -331,7 +331,7 @@
         let draggedPoint = null;
         
         const terrainColors = {
-            plains: '#90EE90',
+            plains: '#ffffff',
             forest: '#228B22',
             swamp: '#556B2F'
         };
@@ -346,7 +346,7 @@
             plainsCanvas.height = 20;
             const plainsCtx = plainsCanvas.getContext('2d');
             plainsCtx.fillStyle = '#90EE90';
-            plainsCtx.fillRect(0, 0, 20, 20);
+            // plainsCtx.fillRect(0, 0, 20, 20);
             plainsCtx.strokeStyle = '#7BC87B';
             plainsCtx.lineWidth = 1;
             for (let i = 0; i < 10; i++) {
@@ -365,8 +365,8 @@
             forestCanvas.height = 30;
             const forestCtx = forestCanvas.getContext('2d');
             forestCtx.fillStyle = '#228B22';
-            forestCtx.fillRect(0, 0, 30, 30);
-            forestCtx.fillStyle = '#1a6b1a';
+            // forestCtx.fillRect(0, 0, 30, 30);
+            forestCtx.fillStyle = '#ffffff';
             for (let i = 0; i < 5; i++) {
                 const x = (i % 2) * 15 + 7;
                 const y = Math.floor(i / 2) * 15 + 7;
@@ -486,31 +486,49 @@
             return { col, row };
         }
         
-        function drawHexBase(x, y, terrain, location) {
-            const corners = getHexCorners(x, y);
-            
-            // Use texture pattern instead of solid color
-            ctx.fillStyle = terrainTextures[terrain] || terrainColors[terrain];
-            ctx.beginPath();
-            ctx.moveTo(corners[0].x, corners[0].y);
-            for (let i = 1; i < 6; i++) {
-                ctx.lineTo(corners[i].x, corners[i].y);
-            }
-            ctx.closePath();
-            ctx.fill();
-            
-            ctx.strokeStyle = '#34495e';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            if (location && locationIcons[location]) {
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(locationIcons[location], x, y - 5);
-            }
+function drawHexBase(x, y, terrain, location) {
+    const corners = getHexCorners(x, y);
+    
+    // Use texture pattern instead of solid color
+    ctx.fillStyle = terrainTextures[terrain] || terrainColors[terrain];
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (let i = 1; i < 6; i++) {
+        ctx.lineTo(corners[i].x, corners[i].y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.strokeStyle = '#444444';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Draw multiple trees for forest terrain
+    if (terrain === "forest") {
+        const numTrees = Math.floor(Math.random() * 6) + 5; // 5–10 trees
+        const size = 32;
+
+        for (let i = 0; i < numTrees; i++) {
+            // Random offset within roughly the hex bounds
+            const offsetX = (Math.random() - 0.5) * 50; // horizontal spread
+            const offsetY = (Math.random() - 0.5) * 50; // vertical spread
+
+            ctx.save();
+            ctx.translate(x + offsetX, y + offsetY);
+            const scale = 0.8 + Math.random() * 0.4; // random size variation
+            ctx.drawImage(treeImage, -size * scale / 2, -size * scale / 2, size * scale, size * scale);
+            ctx.restore();
         }
-        
+    }
+
+    if (location && locationIcons[location]) {
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(locationIcons[location], x, y - 5);
+    }
+}
+
         function drawPath(points, color, width) {
             if (points.length < 2) return;
             
@@ -565,7 +583,9 @@
         
         function drawMap() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+                // Fill entire canvas with white background
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
             // First pass: draw terrain and locations
             for (const hex of mapData.hexes) {
                 const pos = hexToPixel(hex.col, hex.row);
@@ -989,6 +1009,8 @@
         
         // Initialize textures and default map
         createTerrainTextures();
+        const treeImage = new Image();
+treeImage.src = 'assets/beech.png';
         createNewMap();
     </script>
 </body>
