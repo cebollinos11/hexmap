@@ -301,6 +301,7 @@
         
         let terrainTypes = [];
         let terrainColors = {};
+        let terrainEmojis = {};
         let locationTypes = [];
         let locationIcons = {};
         let currentTerrain = null;
@@ -322,10 +323,12 @@
                 const response = await fetch('terrains.json');
                 terrainTypes = await response.json();
 
-                // Build terrainColors object
+                // Build terrainColors and terrainEmojis objects
                 terrainColors = {};
+                terrainEmojis = {};
                 terrainTypes.forEach(terrain => {
                     terrainColors[terrain.id] = terrain.color;
+                    terrainEmojis[terrain.id] = terrain.emoji;
                 });
 
                 // Generate terrain buttons
@@ -433,7 +436,8 @@
                         row: row,
                         terrain: defaultTerrain,
                         location: null,
-                        text: ''
+                        text: '',
+                        showEmoji: Math.random() < 0.5 // 50% chance to show emoji
                     });
                 }
             }
@@ -486,9 +490,9 @@
             return { col, row };
         }
         
-        function drawHexBase(x, y, terrain, location) {
+        function drawHexBase(x, y, terrain, location, showEmoji, hasText) {
             const corners = getHexCorners(x, y);
-            
+
             ctx.fillStyle = terrainColors[terrain];
             ctx.beginPath();
             ctx.moveTo(corners[0].x, corners[0].y);
@@ -497,11 +501,27 @@
             }
             ctx.closePath();
             ctx.fill();
-            
+
             ctx.strokeStyle = '#34495e';
             ctx.lineWidth = 2;
             ctx.stroke();
-            
+
+            // Draw terrain emoji with 30% transparency (70% opacity)
+            // Only show if no location and no text
+            if (showEmoji && terrainEmojis[terrain] && !location && (!hasText || hasText === '')) {
+                ctx.save();
+                ctx.globalAlpha = 0.7; // 30% transparency = 70% opacity
+                ctx.font = '32px "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Symbol", "Noto Sans Sinhala", Arial, sans-serif';
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const emoji = terrainEmojis[terrain];
+                if (emoji) {
+                    ctx.fillText(emoji, x, y);
+                }
+                ctx.restore();
+            }
+
             if (location && locationIcons[location]) {
                 ctx.font = '24px Arial';
                 ctx.textAlign = 'center';
@@ -564,11 +584,11 @@
         
         function drawMap() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             // First pass: draw terrain and locations
             for (const hex of mapData.hexes) {
                 const pos = hexToPixel(hex.col, hex.row);
-                drawHexBase(pos.x, pos.y, hex.terrain, hex.location);
+                drawHexBase(pos.x, pos.y, hex.terrain, hex.location, hex.showEmoji, hex.text);
             }
             
             // Draw rivers
@@ -849,6 +869,7 @@
             // Normal hex editing
             if (currentTerrain) {
                 hex.terrain = currentTerrain;
+                hex.showEmoji = Math.random() < 0.5; // 50% chance to show emoji
             } else if (currentLocation) {
                 hex.location = currentLocation === 'none' ? null : currentLocation;
             } else if (textMode) {
@@ -882,13 +903,19 @@
         function importJSON(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     mapData = JSON.parse(e.target.result);
                     if (!mapData.roads) mapData.roads = [];
                     if (!mapData.rivers) mapData.rivers = [];
+                    // Ensure all hexes have showEmoji property for backward compatibility
+                    mapData.hexes.forEach(hex => {
+                        if (hex.showEmoji === undefined) {
+                            hex.showEmoji = Math.random() < 0.5;
+                        }
+                    });
                     resizeCanvas();
                     drawMap();
                     updatePathList();

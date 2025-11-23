@@ -2,27 +2,32 @@
   {
     "id": "plains",
     "name": "Plains",
-    "color": "#90EE90"
+    "color": "#90EE90",
+    "emoji": "🌾"
   },
   {
     "id": "forest",
     "name": "Forest",
-    "color": "#228B22"
+    "color": "#228B22",
+    "emoji": "🌲"
   },
   {
     "id": "swamp",
     "name": "Swamp",
-    "color": "#556B2F"
+    "color": "#556B2F",
+    "emoji": "෴"
   },
   {
     "id": "water",
     "name": "Water",
-    "color": "#4169E1"
+    "color": "#4169E1",
+    "emoji": "🌊"
   },
   {
     "id": "mountains",
     "name": "Mountains",
-    "color": "#696969"
+    "color": "#696969",
+    "emoji": "⛰️"
   }
 ]
 
