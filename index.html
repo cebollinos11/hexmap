@@ -434,10 +434,17 @@
             const max = config.emojiCount.max;
             const emojiCount = Math.floor(Math.random() * (max - min + 1)) + min;
             const emojiPositions = [];
+
+            // Place emojis on a circle, equidistant from center and evenly spaced
+            const radius = hexSize * 0.45; // Distance from center
+            const angleStep = (2 * Math.PI) / emojiCount; // Equal angular spacing
+            const startAngle = Math.random() * 2 * Math.PI; // Random starting angle for variety
+
             for (let i = 0; i < emojiCount; i++) {
+                const angle = startAngle + (i * angleStep);
                 emojiPositions.push({
-                    x: (Math.random() - 0.5) * hexSize * 0.6,
-                    y: (Math.random() - 0.5) * hexSize * 0.6
+                    x: Math.cos(angle) * radius,
+                    y: Math.sin(angle) * radius
                 });
             }
             return emojiPositions;
