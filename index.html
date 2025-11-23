@@ -623,17 +623,51 @@
                 const pos = hexToPixel(hex.col, hex.row);
                 drawHexBase(pos.x, pos.y, hex.terrain, hex.location, hex.text, hex.emojiPositions);
             }
-            
+
+            // Draw terrain emojis at edge midpoints between hexes with same terrain
+            const drawnEdges = new Set(); // Track edges we've already drawn
+            for (const hex of mapData.hexes) {
+                const neighbors = getHexNeighbors(hex.col, hex.row);
+
+                for (const neighbor of neighbors) {
+                    // Check if both hexes have the same terrain
+                    if (hex.terrain === neighbor.hex.terrain && terrainEmojis[hex.terrain]) {
+                        // Create a unique edge identifier (sorted to avoid duplicates)
+                        const edgeKey = [
+                            `${hex.col},${hex.row}`,
+                            `${neighbor.col},${neighbor.row}`
+                        ].sort().join('|');
+
+                        // Only draw if we haven't drawn this edge yet
+                        if (!drawnEdges.has(edgeKey)) {
+                            drawnEdges.add(edgeKey);
+
+                            const midpoint = getHexEdgeMidpoint(hex.col, hex.row, neighbor.col, neighbor.row);
+
+                            // Draw emoji at midpoint with 70% opacity
+                            ctx.save();
+                            ctx.globalAlpha = 0.7;
+                            ctx.font = '14px "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Symbol", "Noto Sans Sinhala", Arial, sans-serif';
+                            ctx.fillStyle = '#000000';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(terrainEmojis[hex.terrain], midpoint.x, midpoint.y);
+                            ctx.restore();
+                        }
+                    }
+                }
+            }
+
             // Draw rivers
             for (const river of mapData.rivers) {
                 drawPath(river.points, '#4A90E2', 8);
             }
-            
+
             // Draw roads
             for (const road of mapData.roads) {
                 drawPath(road.points, '#8B7355', 6);
             }
-            
+
             // Draw current path being created
             if (currentPath && currentPath.points.length > 0) {
                 const color = pathMode === 'road' ? '#8B7355' : '#4A90E2';
@@ -641,13 +675,13 @@
                 drawPath(currentPath.points, color, width);
                 drawPathPoints(currentPath.points, color);
             }
-            
+
             // Draw selected path in edit mode
             if (editMode && selectedPath) {
                 const color = selectedPath.type === 'road' ? '#D4A574' : '#6FB1FF';
                 drawPathPoints(selectedPath.points, color);
             }
-            
+
             // Second pass: draw text on top of everything
             for (const hex of mapData.hexes) {
                 if (hex.text) {
@@ -659,6 +693,50 @@
         
         function getHexAt(col, row) {
             return mapData.hexes.find(h => h.col === col && h.row === row);
+        }
+
+        // Get all 6 neighbors of a hex in offset coordinates
+        function getHexNeighbors(col, row) {
+            const neighbors = [];
+            const isEvenCol = col % 2 === 0;
+
+            // The 6 directions for offset coordinates (pointy-top hexes)
+            const directions = isEvenCol ? [
+                { dc: 1, dr: 0 },   // East
+                { dc: 1, dr: -1 },  // Northeast
+                { dc: 0, dr: -1 },  // Northwest
+                { dc: -1, dr: -1 }, // West-Northwest
+                { dc: -1, dr: 0 },  // West
+                { dc: 0, dr: 1 }    // Southwest
+            ] : [
+                { dc: 1, dr: 1 },   // East-Southeast
+                { dc: 1, dr: 0 },   // East
+                { dc: 0, dr: -1 },  // Northwest
+                { dc: -1, dr: 0 },  // West
+                { dc: -1, dr: 1 },  // West-Southwest
+                { dc: 0, dr: 1 }    // Southwest
+            ];
+
+            for (const dir of directions) {
+                const neighborCol = col + dir.dc;
+                const neighborRow = row + dir.dr;
+                const neighbor = getHexAt(neighborCol, neighborRow);
+                if (neighbor) {
+                    neighbors.push({ hex: neighbor, col: neighborCol, row: neighborRow });
+                }
+            }
+
+            return neighbors;
+        }
+
+        // Calculate midpoint between two hex centers
+        function getHexEdgeMidpoint(col1, row1, col2, row2) {
+            const pos1 = hexToPixel(col1, row1);
+            const pos2 = hexToPixel(col2, row2);
+            return {
+                x: (pos1.x + pos2.x) / 2,
+                y: (pos1.y + pos2.y) / 2
+            };
         }
         
         function selectTerrain(terrain) {
