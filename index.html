@@ -309,6 +309,7 @@
         let textMode = false;
         let textRemoveMode = false;
         let isDragging = false;
+        let config = { emojiCount: { min: 2, max: 6 } }; // Default config
 
         let pathMode = null; // 'road' or 'river'
         let currentPath = null;
@@ -363,6 +364,19 @@
             }
         }
 
+        // Load configuration from JSON file
+        async function loadConfig() {
+            try {
+                const response = await fetch('config.json');
+                config = await response.json();
+                console.log('Config loaded:', config);
+            } catch (error) {
+                console.error('Error loading config:', error);
+                console.log('Using default config');
+                // Keep default config values
+            }
+        }
+
         // Load location types from JSON file
         async function loadLocationTypes() {
             try {
@@ -409,9 +423,24 @@
 
         // Initialize the application
         async function initializeApp() {
-            await Promise.all([loadTerrainTypes(), loadLocationTypes()]);
+            await Promise.all([loadConfig(), loadTerrainTypes(), loadLocationTypes()]);
             createNewMap();
             drawMap();
+        }
+
+        // Helper function to generate random emoji positions
+        function generateEmojiPositions() {
+            const min = config.emojiCount.min;
+            const max = config.emojiCount.max;
+            const emojiCount = Math.floor(Math.random() * (max - min + 1)) + min;
+            const emojiPositions = [];
+            for (let i = 0; i < emojiCount; i++) {
+                emojiPositions.push({
+                    x: (Math.random() - 0.5) * hexSize * 0.6,
+                    y: (Math.random() - 0.5) * hexSize * 0.6
+                });
+            }
+            return emojiPositions;
         }
 
         function createNewMap() {
@@ -437,9 +466,7 @@
                         terrain: defaultTerrain,
                         location: null,
                         text: '',
-                        showEmoji: Math.random() < 0.5, // 50% chance to show emoji
-                        emojiOffsetX: (Math.random() - 0.5) * hexSize * 0.6, // Random offset within hex
-                        emojiOffsetY: (Math.random() - 0.5) * hexSize * 0.6  // Random offset within hex
+                        emojiPositions: generateEmojiPositions()
                     });
                 }
             }
@@ -492,7 +519,7 @@
             return { col, row };
         }
         
-        function drawHexBase(x, y, terrain, location, showEmoji, hasText, emojiOffsetX, emojiOffsetY) {
+        function drawHexBase(x, y, terrain, location, hasText, emojiPositions) {
             const corners = getHexCorners(x, y);
 
             ctx.fillStyle = terrainColors[terrain];
@@ -508,9 +535,9 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Draw terrain emoji with 30% transparency (70% opacity)
+            // Draw terrain emojis with 30% transparency (70% opacity)
             // Only show if no location and no text
-            if (showEmoji && terrainEmojis[terrain] && !location && (!hasText || hasText === '')) {
+            if (terrainEmojis[terrain] && !location && (!hasText || hasText === '')) {
                 ctx.save();
                 ctx.globalAlpha = 0.7; // 30% transparency = 70% opacity
                 ctx.font = '14px "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Symbol", "Noto Sans Sinhala", Arial, sans-serif';
@@ -518,11 +545,12 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 const emoji = terrainEmojis[terrain];
-                if (emoji) {
-                    // Apply random offset to emoji position
-                    const offsetX = emojiOffsetX || 0;
-                    const offsetY = emojiOffsetY || 0;
-                    ctx.fillText(emoji, x + offsetX, y + offsetY);
+
+                if (emoji && emojiPositions && emojiPositions.length > 0) {
+                    // Draw multiple emojis at different positions
+                    for (const pos of emojiPositions) {
+                        ctx.fillText(emoji, x + pos.x, y + pos.y);
+                    }
                 }
                 ctx.restore();
             }
@@ -593,7 +621,7 @@
             // First pass: draw terrain and locations
             for (const hex of mapData.hexes) {
                 const pos = hexToPixel(hex.col, hex.row);
-                drawHexBase(pos.x, pos.y, hex.terrain, hex.location, hex.showEmoji, hex.text, hex.emojiOffsetX, hex.emojiOffsetY);
+                drawHexBase(pos.x, pos.y, hex.terrain, hex.location, hex.text, hex.emojiPositions);
             }
             
             // Draw rivers
@@ -874,9 +902,7 @@
             // Normal hex editing
             if (currentTerrain) {
                 hex.terrain = currentTerrain;
-                hex.showEmoji = Math.random() < 0.5; // 50% chance to show emoji
-                hex.emojiOffsetX = (Math.random() - 0.5) * hexSize * 0.6; // Random offset within hex
-                hex.emojiOffsetY = (Math.random() - 0.5) * hexSize * 0.6; // Random offset within hex
+                hex.emojiPositions = generateEmojiPositions();
             } else if (currentLocation) {
                 hex.location = currentLocation === 'none' ? null : currentLocation;
             } else if (textMode) {
@@ -917,16 +943,10 @@
                     mapData = JSON.parse(e.target.result);
                     if (!mapData.roads) mapData.roads = [];
                     if (!mapData.rivers) mapData.rivers = [];
-                    // Ensure all hexes have showEmoji property for backward compatibility
+                    // Ensure all hexes have emojiPositions property for backward compatibility
                     mapData.hexes.forEach(hex => {
-                        if (hex.showEmoji === undefined) {
-                            hex.showEmoji = Math.random() < 0.5;
-                        }
-                        if (hex.emojiOffsetX === undefined) {
-                            hex.emojiOffsetX = (Math.random() - 0.5) * hexSize * 0.6;
-                        }
-                        if (hex.emojiOffsetY === undefined) {
-                            hex.emojiOffsetY = (Math.random() - 0.5) * hexSize * 0.6;
+                        if (!hex.emojiPositions || hex.emojiPositions.length === 0) {
+                            hex.emojiPositions = generateEmojiPositions();
                         }
                     });
                     resizeCanvas();
