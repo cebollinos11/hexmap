@@ -483,7 +483,31 @@
             canvas.width = (mapData.width * hexWidth * 0.75) + hexWidth * 0.5;
             canvas.height = (mapData.height * hexHeight) + hexHeight * 0.5;
         }
-        
+
+        function varyColor(hexColor, x, y) {
+            // Parse hex color to RGB
+            const hex = hexColor.replace('#', '');
+            let r = parseInt(hex.substring(0, 2), 16);
+            let g = parseInt(hex.substring(2, 4), 16);
+            let b = parseInt(hex.substring(4, 6), 16);
+
+            // Create a pseudo-random but deterministic variation based on position
+            const seed = (x * 73856093) ^ (y * 19349663);
+            const random = Math.abs(Math.sin(seed)) * 2 - 1; // Range: -1 to 1
+
+            // Apply subtle variation (±5% brightness)
+            const variation = random * 0.05;
+            r = Math.max(0, Math.min(255, Math.round(r * (1 + variation))));
+            g = Math.max(0, Math.min(255, Math.round(g * (1 + variation))));
+            b = Math.max(0, Math.min(255, Math.round(b * (1 + variation))));
+
+            // Convert back to hex
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
         function getHexCorners(x, y) {
             const corners = [];
             for (let i = 0; i < 6; i++) {
@@ -522,7 +546,11 @@
         function drawHexBase(x, y, terrain, location, hasText, emojiPositions) {
             const corners = getHexCorners(x, y);
 
-            ctx.fillStyle = terrainColors[terrain];
+            // Add slight color variation based on hex position
+            const baseColor = terrainColors[terrain];
+            const variedColor = varyColor(baseColor, x, y);
+
+            ctx.fillStyle = variedColor;
             ctx.beginPath();
             ctx.moveTo(corners[0].x, corners[0].y);
             for (let i = 1; i < 6; i++) {
