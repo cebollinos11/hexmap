@@ -1,0 +1,28 @@
+[
+  {
+    "id": "plains",
+    "name": "Plains",
+    "color": "#90EE90"
+  },
+  {
+    "id": "forest",
+    "name": "Forest",
+    "color": "#228B22"
+  },
+  {
+    "id": "swamp",
+    "name": "Swamp",
+    "color": "#556B2F"
+  },
+  {
+    "id": "water",
+    "name": "Water",
+    "color": "#4169E1"
+  },
+  {
+    "id": "mountains",
+    "name": "Mountains",
+    "color": "#696969"
+  }
+]
+

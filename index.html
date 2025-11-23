@@ -239,18 +239,9 @@
         
         <div class="tool-group">
             <h3>Terrain Paint</h3>
-            <button class="tool-btn terrain-btn active" data-terrain="plains">
-                <span class="color-preview" style="background: #90EE90;"></span>
-                Plains
-            </button>
-            <button class="tool-btn terrain-btn" data-terrain="forest">
-                <span class="color-preview" style="background: #228B22;"></span>
-                Forest
-            </button>
-            <button class="tool-btn terrain-btn" data-terrain="swamp">
-                <span class="color-preview" style="background: #556B2F;"></span>
-                Swamp
-            </button>
+            <div id="terrainButtons">
+                <!-- Terrain buttons will be loaded dynamically -->
+            </div>
         </div>
         
         <div class="tool-group">
@@ -317,12 +308,14 @@
             rivers: []
         };
         
-        let currentTerrain = 'plains';
+        let terrainTypes = [];
+        let terrainColors = {};
+        let currentTerrain = null;
         let currentLocation = null;
         let textMode = false;
         let textRemoveMode = false;
         let isDragging = false;
-        
+
         let pathMode = null; // 'road' or 'river'
         let currentPath = null;
         let editMode = false;
@@ -330,18 +323,60 @@
         let selectedPointIndex = -1;
         let draggedPoint = null;
         
-        const terrainColors = {
-            plains: '#90EE90',
-            forest: '#228B22',
-            swamp: '#556B2F'
-        };
-        
         const locationIcons = {
             city: '🏰',
             ruins: '🏛️',
             temple: '⛩️'
         };
-        
+
+        // Load terrain types from JSON file
+        async function loadTerrainTypes() {
+            try {
+                const response = await fetch('terrains.json');
+                terrainTypes = await response.json();
+
+                // Build terrainColors object
+                terrainColors = {};
+                terrainTypes.forEach(terrain => {
+                    terrainColors[terrain.id] = terrain.color;
+                });
+
+                // Generate terrain buttons
+                const terrainButtonsContainer = document.getElementById('terrainButtons');
+                terrainButtonsContainer.innerHTML = '';
+
+                terrainTypes.forEach((terrain, index) => {
+                    const button = document.createElement('button');
+                    button.className = 'tool-btn terrain-btn';
+                    if (index === 0) {
+                        button.classList.add('active');
+                        currentTerrain = terrain.id;
+                    }
+                    button.dataset.terrain = terrain.id;
+
+                    const colorPreview = document.createElement('span');
+                    colorPreview.className = 'color-preview';
+                    colorPreview.style.background = terrain.color;
+
+                    button.appendChild(colorPreview);
+                    button.appendChild(document.createTextNode(terrain.name));
+
+                    button.addEventListener('click', () => {
+                        selectTerrain(terrain.id);
+                    });
+
+                    terrainButtonsContainer.appendChild(button);
+                });
+
+                // Initialize the map after terrain types are loaded
+                createNewMap();
+                drawMap();
+            } catch (error) {
+                console.error('Error loading terrain types:', error);
+                alert('Failed to load terrain types. Please check terrains.json file.');
+            }
+        }
+
         function createNewMap() {
             const width = parseInt(document.getElementById('mapWidth').value);
             const height = parseInt(document.getElementById('mapHeight').value);
@@ -354,12 +389,15 @@
                 rivers: []
             };
             
+            // Use first terrain type as default, or 'plains' if terrains not loaded yet
+            const defaultTerrain = terrainTypes.length > 0 ? terrainTypes[0].id : 'plains';
+
             for (let row = 0; row < height; row++) {
                 for (let col = 0; col < width; col++) {
                     mapData.hexes.push({
                         col: col,
                         row: row,
-                        terrain: 'plains',
+                        terrain: defaultTerrain,
                         location: null,
                         text: ''
                     });
@@ -888,19 +926,13 @@
         });
         
         document.getElementById('createMapBtn').addEventListener('click', createNewMap);
-        
-        document.querySelectorAll('.terrain-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                selectTerrain(btn.dataset.terrain);
-            });
-        });
-        
+
         document.querySelectorAll('.location-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 selectLocation(btn.dataset.location);
             });
         });
-        
+
         document.getElementById('addTextBtn').addEventListener('click', enableTextMode);
         document.getElementById('removeTextBtn').addEventListener('click', enableTextRemoveMode);
         document.getElementById('newRoadBtn').addEventListener('click', startNewRoad);
@@ -913,9 +945,9 @@
             document.getElementById('fileInput').click();
         });
         document.getElementById('fileInput').addEventListener('change', importJSON);
-        
-        // Initialize with default map
-        createNewMap();
+
+        // Initialize by loading terrain types and creating default map
+        loadTerrainTypes();
     </script>
 </body>
 </html>
