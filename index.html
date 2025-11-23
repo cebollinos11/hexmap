@@ -437,7 +437,9 @@
                         terrain: defaultTerrain,
                         location: null,
                         text: '',
-                        showEmoji: Math.random() < 0.5 // 50% chance to show emoji
+                        showEmoji: Math.random() < 0.5, // 50% chance to show emoji
+                        emojiOffsetX: (Math.random() - 0.5) * hexSize * 0.6, // Random offset within hex
+                        emojiOffsetY: (Math.random() - 0.5) * hexSize * 0.6  // Random offset within hex
                     });
                 }
             }
@@ -490,7 +492,7 @@
             return { col, row };
         }
         
-        function drawHexBase(x, y, terrain, location, showEmoji, hasText) {
+        function drawHexBase(x, y, terrain, location, showEmoji, hasText, emojiOffsetX, emojiOffsetY) {
             const corners = getHexCorners(x, y);
 
             ctx.fillStyle = terrainColors[terrain];
@@ -517,7 +519,10 @@
                 ctx.textBaseline = 'middle';
                 const emoji = terrainEmojis[terrain];
                 if (emoji) {
-                    ctx.fillText(emoji, x, y);
+                    // Apply random offset to emoji position
+                    const offsetX = emojiOffsetX || 0;
+                    const offsetY = emojiOffsetY || 0;
+                    ctx.fillText(emoji, x + offsetX, y + offsetY);
                 }
                 ctx.restore();
             }
@@ -588,7 +593,7 @@
             // First pass: draw terrain and locations
             for (const hex of mapData.hexes) {
                 const pos = hexToPixel(hex.col, hex.row);
-                drawHexBase(pos.x, pos.y, hex.terrain, hex.location, hex.showEmoji, hex.text);
+                drawHexBase(pos.x, pos.y, hex.terrain, hex.location, hex.showEmoji, hex.text, hex.emojiOffsetX, hex.emojiOffsetY);
             }
             
             // Draw rivers
@@ -870,6 +875,8 @@
             if (currentTerrain) {
                 hex.terrain = currentTerrain;
                 hex.showEmoji = Math.random() < 0.5; // 50% chance to show emoji
+                hex.emojiOffsetX = (Math.random() - 0.5) * hexSize * 0.6; // Random offset within hex
+                hex.emojiOffsetY = (Math.random() - 0.5) * hexSize * 0.6; // Random offset within hex
             } else if (currentLocation) {
                 hex.location = currentLocation === 'none' ? null : currentLocation;
             } else if (textMode) {
@@ -914,6 +921,12 @@
                     mapData.hexes.forEach(hex => {
                         if (hex.showEmoji === undefined) {
                             hex.showEmoji = Math.random() < 0.5;
+                        }
+                        if (hex.emojiOffsetX === undefined) {
+                            hex.emojiOffsetX = (Math.random() - 0.5) * hexSize * 0.6;
+                        }
+                        if (hex.emojiOffsetY === undefined) {
+                            hex.emojiOffsetY = (Math.random() - 0.5) * hexSize * 0.6;
                         }
                     });
                     resizeCanvas();
