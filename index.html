@@ -331,82 +331,10 @@
         let draggedPoint = null;
         
         const terrainColors = {
-            plains: '#ffffff',
+            plains: '#90EE90',
             forest: '#228B22',
             swamp: '#556B2F'
         };
-        
-        // Texture patterns for terrains
-        const terrainTextures = {};
-        
-        function createTerrainTextures() {
-            // Plains texture - grass pattern
-            const plainsCanvas = document.createElement('canvas');
-            plainsCanvas.width = 20;
-            plainsCanvas.height = 20;
-            const plainsCtx = plainsCanvas.getContext('2d');
-            plainsCtx.fillStyle = '#90EE90';
-            // plainsCtx.fillRect(0, 0, 20, 20);
-            plainsCtx.strokeStyle = '#7BC87B';
-            plainsCtx.lineWidth = 1;
-            for (let i = 0; i < 10; i++) {
-                const x = Math.random() * 20;
-                const y = Math.random() * 20;
-                plainsCtx.beginPath();
-                plainsCtx.moveTo(x, y);
-                plainsCtx.lineTo(x, y - 3);
-                plainsCtx.stroke();
-            }
-            terrainTextures.plains = ctx.createPattern(plainsCanvas, 'repeat');
-            
-            // Forest texture - tree pattern
-            const forestCanvas = document.createElement('canvas');
-            forestCanvas.width = 30;
-            forestCanvas.height = 30;
-            const forestCtx = forestCanvas.getContext('2d');
-            forestCtx.fillStyle = '#228B22';
-            // forestCtx.fillRect(0, 0, 30, 30);
-            forestCtx.fillStyle = '#ffffff';
-            for (let i = 0; i < 5; i++) {
-                const x = (i % 2) * 15 + 7;
-                const y = Math.floor(i / 2) * 15 + 7;
-                forestCtx.beginPath();
-                forestCtx.moveTo(x, y - 4);
-                forestCtx.lineTo(x - 3, y + 2);
-                forestCtx.lineTo(x + 3, y + 2);
-                forestCtx.closePath();
-                forestCtx.fill();
-                forestCtx.fillRect(x - 1, y + 2, 2, 3);
-            }
-            terrainTextures.forest = ctx.createPattern(forestCanvas, 'repeat');
-            
-            // Swamp texture - muddy water pattern
-            const swampCanvas = document.createElement('canvas');
-            swampCanvas.width = 25;
-            swampCanvas.height = 25;
-            const swampCtx = swampCanvas.getContext('2d');
-            swampCtx.fillStyle = '#556B2F';
-            swampCtx.fillRect(0, 0, 25, 25);
-            swampCtx.fillStyle = '#4a5f28';
-            for (let i = 0; i < 8; i++) {
-                const x = Math.random() * 25;
-                const y = Math.random() * 25;
-                swampCtx.beginPath();
-                swampCtx.arc(x, y, 2, 0, Math.PI * 2);
-                swampCtx.fill();
-            }
-            swampCtx.strokeStyle = '#3d4f22';
-            swampCtx.lineWidth = 1;
-            for (let i = 0; i < 5; i++) {
-                const x = Math.random() * 25;
-                const y = Math.random() * 25;
-                swampCtx.beginPath();
-                swampCtx.moveTo(x, y);
-                swampCtx.lineTo(x + 3, y - 2);
-                swampCtx.stroke();
-            }
-            terrainTextures.swamp = ctx.createPattern(swampCanvas, 'repeat');
-        }
         
         const locationIcons = {
             city: '🏰',
@@ -486,49 +414,30 @@
             return { col, row };
         }
         
-function drawHexBase(x, y, terrain, location) {
-    const corners = getHexCorners(x, y);
-    
-    // Use texture pattern instead of solid color
-    ctx.fillStyle = terrainTextures[terrain] || terrainColors[terrain];
-    ctx.beginPath();
-    ctx.moveTo(corners[0].x, corners[0].y);
-    for (let i = 1; i < 6; i++) {
-        ctx.lineTo(corners[i].x, corners[i].y);
-    }
-    ctx.closePath();
-    ctx.fill();
-    
-    ctx.strokeStyle = '#444444';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Draw multiple trees for forest terrain
-    if (terrain === "forest") {
-        const numTrees = Math.floor(Math.random() * 6) + 5; // 5–10 trees
-        const size = 32;
-
-        for (let i = 0; i < numTrees; i++) {
-            // Random offset within roughly the hex bounds
-            const offsetX = (Math.random() - 0.5) * 50; // horizontal spread
-            const offsetY = (Math.random() - 0.5) * 50; // vertical spread
-
-            ctx.save();
-            ctx.translate(x + offsetX, y + offsetY);
-            const scale = 0.8 + Math.random() * 0.4; // random size variation
-            ctx.drawImage(treeImage, -size * scale / 2, -size * scale / 2, size * scale, size * scale);
-            ctx.restore();
+        function drawHexBase(x, y, terrain, location) {
+            const corners = getHexCorners(x, y);
+            
+            ctx.fillStyle = terrainColors[terrain];
+            ctx.beginPath();
+            ctx.moveTo(corners[0].x, corners[0].y);
+            for (let i = 1; i < 6; i++) {
+                ctx.lineTo(corners[i].x, corners[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.strokeStyle = '#34495e';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            if (location && locationIcons[location]) {
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(locationIcons[location], x, y - 5);
+            }
         }
-    }
-
-    if (location && locationIcons[location]) {
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(locationIcons[location], x, y - 5);
-    }
-}
-
+        
         function drawPath(points, color, width) {
             if (points.length < 2) return;
             
@@ -583,9 +492,7 @@ function drawHexBase(x, y, terrain, location) {
         
         function drawMap() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-                // Fill entire canvas with white background
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             // First pass: draw terrain and locations
             for (const hex of mapData.hexes) {
                 const pos = hexToPixel(hex.col, hex.row);
@@ -1007,10 +914,7 @@ function drawHexBase(x, y, terrain, location) {
         });
         document.getElementById('fileInput').addEventListener('change', importJSON);
         
-        // Initialize textures and default map
-        createTerrainTextures();
-        const treeImage = new Image();
-treeImage.src = 'assets/beech.png';
+        // Initialize with default map
         createNewMap();
     </script>
 </body>
