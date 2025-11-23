@@ -1,0 +1,23 @@
+[
+  {
+    "id": "city",
+    "name": "City",
+    "icon": "🏰"
+  },
+  {
+    "id": "ruins",
+    "name": "Ruins",
+    "icon": "🏛️"
+  },
+  {
+    "id": "special",
+    "name": "Special",
+    "icon": "🚩"
+  },
+  {
+    "id": "village",
+    "name": "Village",
+    "icon": "🛖"
+  }
+]
+

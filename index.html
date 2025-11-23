@@ -246,18 +246,9 @@
         
         <div class="tool-group">
             <h3>Locations</h3>
-            <button class="tool-btn location-btn" data-location="city">
-                🏰 City
-            </button>
-            <button class="tool-btn location-btn" data-location="ruins">
-                🏛️ Ruins
-            </button>
-            <button class="tool-btn location-btn" data-location="temple">
-                ⛩️ Temple
-            </button>
-            <button class="tool-btn location-btn" data-location="none">
-                ❌ Remove Location
-            </button>
+            <div id="locationButtons">
+                <!-- Location buttons will be loaded dynamically -->
+            </div>
         </div>
         
         <div class="tool-group">
@@ -310,6 +301,8 @@
         
         let terrainTypes = [];
         let terrainColors = {};
+        let locationTypes = [];
+        let locationIcons = {};
         let currentTerrain = null;
         let currentLocation = null;
         let textMode = false;
@@ -322,12 +315,6 @@
         let selectedPath = null;
         let selectedPointIndex = -1;
         let draggedPoint = null;
-        
-        const locationIcons = {
-            city: '🏰',
-            ruins: '🏛️',
-            temple: '⛩️'
-        };
 
         // Load terrain types from JSON file
         async function loadTerrainTypes() {
@@ -367,14 +354,61 @@
 
                     terrainButtonsContainer.appendChild(button);
                 });
-
-                // Initialize the map after terrain types are loaded
-                createNewMap();
-                drawMap();
             } catch (error) {
                 console.error('Error loading terrain types:', error);
                 alert('Failed to load terrain types. Please check terrains.json file.');
             }
+        }
+
+        // Load location types from JSON file
+        async function loadLocationTypes() {
+            try {
+                const response = await fetch('locations.json');
+                locationTypes = await response.json();
+
+                // Build locationIcons object
+                locationIcons = {};
+                locationTypes.forEach(location => {
+                    locationIcons[location.id] = location.icon;
+                });
+
+                // Generate location buttons
+                const locationButtonsContainer = document.getElementById('locationButtons');
+                locationButtonsContainer.innerHTML = '';
+
+                locationTypes.forEach(location => {
+                    const button = document.createElement('button');
+                    button.className = 'tool-btn location-btn';
+                    button.dataset.location = location.id;
+                    button.textContent = `${location.icon} ${location.name}`;
+
+                    button.addEventListener('click', () => {
+                        selectLocation(location.id);
+                    });
+
+                    locationButtonsContainer.appendChild(button);
+                });
+
+                // Add "Remove Location" button
+                const removeButton = document.createElement('button');
+                removeButton.className = 'tool-btn location-btn';
+                removeButton.dataset.location = 'none';
+                removeButton.textContent = '❌ Remove Location';
+                removeButton.addEventListener('click', () => {
+                    selectLocation('none');
+                });
+                locationButtonsContainer.appendChild(removeButton);
+            } catch (error) {
+                console.error('Error loading location types:', error);
+                alert('Failed to load location types. Please check locations.json file.');
+            }
+        }
+
+        // Initialize the application
+        async function initializeApp() {
+            await Promise.all([loadTerrainTypes(), loadLocationTypes()]);
+            createNewMap();
+            drawMap();
         }
 
         function createNewMap() {
@@ -927,12 +961,6 @@
         
         document.getElementById('createMapBtn').addEventListener('click', createNewMap);
 
-        document.querySelectorAll('.location-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                selectLocation(btn.dataset.location);
-            });
-        });
-
         document.getElementById('addTextBtn').addEventListener('click', enableTextMode);
         document.getElementById('removeTextBtn').addEventListener('click', enableTextRemoveMode);
         document.getElementById('newRoadBtn').addEventListener('click', startNewRoad);
@@ -946,8 +974,8 @@
         });
         document.getElementById('fileInput').addEventListener('change', importJSON);
 
-        // Initialize by loading terrain types and creating default map
-        loadTerrainTypes();
+        // Initialize by loading terrain and location types, then creating default map
+        initializeApp();
     </script>
 </body>
 </html>
